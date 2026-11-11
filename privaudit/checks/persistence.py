@@ -37,8 +37,8 @@ class PersistenceCheck(BaseCheck):
                                     evidence=f"File: {cron_file}, Mode: {oct(mode)}",
                                     remediation=f"chmod 600 '{cron_file}' && chown {st.st_uid}:crontab '{cron_file}'",
                                 ))
-                except (PermissionError, OSError):
-                    pass
+                except (PermissionError, OSError) as e:
+                    self.mark_incomplete(f"could not list {spool}: {e}")
 
         # Check 2: Inspect scripts inside /etc/cron.* for world-writable permissions
         cron_dirs = ["/etc/cron.hourly", "/etc/cron.daily", "/etc/cron.weekly", "/etc/cron.monthly", "/etc/cron.d"]

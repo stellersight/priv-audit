@@ -33,13 +33,15 @@ class SudoCheck(BaseCheck):
 
         if os.path.isdir(self.sudoers_dir):
             try:
-                for entry in os.listdir(self.sudoers_dir):
-                    if not entry.startswith(".") and not entry.endswith("~"):
+                for entry in sorted(os.listdir(self.sudoers_dir)):
+                    # sudo skips names that end in "~" or contain a ".", so
+                    # auditing them would report rules sudo never applies.
+                    if "." not in entry and not entry.endswith("~"):
                         full_entry = os.path.join(self.sudoers_dir, entry)
                         if os.path.isfile(full_entry):
                             files_to_check.append(full_entry)
-            except (PermissionError, OSError):
-                pass
+            except (PermissionError, OSError) as e:
+                self.mark_incomplete(f"could not list {self.sudoers_dir}: {e}")
 
         for file_path in files_to_check:
             try:
@@ -55,6 +57,7 @@ class SudoCheck(BaseCheck):
                     evidence=f"Path: {file_path}",
                     remediation="Execute priv-audit as root or via authorized sudo.",
                 ))
+                self.mark_incomplete(f"could not read {file_path}")
             except Exception as e:
                 continue
 

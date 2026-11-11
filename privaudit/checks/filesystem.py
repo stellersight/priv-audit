@@ -52,8 +52,10 @@ class FilesystemCheck(BaseCheck):
 
                 # World-writable check
                 is_world_writable = bool(mode & stat.S_IWOTH)
-                # Group-writable check
-                is_group_writable = bool(mode & stat.S_IWGRP)
+                # Permission bits are a set, not a number: 0o604 is smaller
+                # than 0o640 yet grants world read. Any bit outside the policy
+                # mask is an excess, whatever a numeric comparison says.
+                excess_bits = mode & ~max_mode & 0o7777
 
                 if is_world_writable:
                     findings.append(Finding(
@@ -73,19 +75,37 @@ class FilesystemCheck(BaseCheck):
                             "ISO_27001": "A.9.4.1 Information Access Restriction"
                         }
                     ))
-                elif mode > max_mode:
+                elif excess_bits:
                     findings.append(Finding(
                         check_id=cid,
                         title=title,
                         severity=sev,
                         description=(
-                            f"File '{file_path}' permissions ({oct(mode)}) exceed the recommended maximum mode ({oct(max_mode)})."
+                            f"File '{file_path}' permissions ({oct(mode)}) grant bits outside the recommended "
+                            f"maximum mode ({oct(max_mode)}): {oct(excess_bits)}."
                         ),
-                        evidence=f"Current Mode: {oct(mode)}, Recommended: {oct(max_mode)}",
+                        evidence=f"Current Mode: {oct(mode)}, Recommended: {oct(max_mode)}, Excess bits: {oct(excess_bits)}",
                         remediation=f"Harden permissions: chmod {oct(max_mode)[2:]} '{file_path}'",
                         references=["https://cwe.mitre.org/data/definitions/732.html"]
                     ))
-            except (PermissionError, OSError):
+
+                # Every file in this list is root-administered. A non-root
+                # owner can rewrite it whatever the mode bits say.
+                if st.st_uid != 0:
+                    findings.append(Finding(
+                        check_id=f"{cid}-OWNER",
+                        title=f"Critical File Not Owned by root: {file_path}",
+                        severity=sev,
+                        description=(
+                            f"'{file_path}' is owned by UID {st.st_uid}. Its owner can change its contents "
+                            f"and permissions without any further privilege."
+                        ),
+                        evidence=f"Path: {file_path}, Owner UID: {st.st_uid}, GID: {st.st_gid}",
+                        remediation=f"chown root '{file_path}'",
+                        references=["https://cwe.mitre.org/data/definitions/732.html"]
+                    ))
+            except (PermissionError, OSError) as e:
+                self.mark_incomplete(f"could not stat {file_path}: {e}")
                 continue
 
         # Audit sensitive directories for world-writable permissions

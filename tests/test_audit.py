@@ -67,7 +67,7 @@ class TestSshCheck(unittest.TestCase):
     @patch("builtins.open", new_callable=mock_open, read_data="PermitRootLogin yes\nPasswordAuthentication yes\nPermitEmptyPasswords yes\n")
     def test_detects_insecure_ssh_directives(self, mock_file, mock_exists):
         mock_exists.return_value = True
-        checker = SshCheck(config_path="/etc/ssh/sshd_config", config_dir="/nonexistent")
+        checker = SshCheck(config_path="/etc/ssh/sshd_config", config_dir="/nonexistent", use_sshd=False)
         findings = checker.run()
 
         ids = [f.check_id for f in findings]

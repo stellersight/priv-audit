@@ -90,10 +90,25 @@ priv-audit --markdown -o host-audit-report.md
 ```
 
 ### DevSecOps / CI Pipeline Gate
-Exit with return code `1` if any **CRITICAL** or **HIGH** severity finding exists:
 ```bash
-priv-audit --exit-code
+priv-audit --exit-code              # fail on HIGH and above
+priv-audit --exit-code --fail-on medium
 ```
+
+| Exit code | Meaning |
+| :--- | :--- |
+| `0` | Scan complete, no finding at or above `--fail-on` |
+| `1` | At least one finding at or above `--fail-on` |
+| `2` | Scan incomplete, for example files unreadable without root, `getcap` missing, or `sshd -T` unavailable |
+| `3` | A check failed with an unexpected error |
+
+An incomplete scan is never reported as clean. Run as root for a complete result.
+
+### What is and is not a finding
+* Package-managed SUID binaries in system directories (`sudo`, `passwd`, `pkexec`, `unix_chkpwd` and similar) are expected and are not reported. Whether `sudo` grants too much is decided by the sudoers check, not by its file mode.
+* The same binaries outside system directories are reported. Anything SUID or SGID in `/tmp`, `/var/tmp` or `/dev/shm` is CRITICAL.
+* File permissions are checked bit by bit against a per-file policy, so `/etc/shadow` at `0604` is reported even though `0604` is numerically below `0640`.
+* SSH settings are read from `sshd -T`, the daemon's own effective configuration, when it is available. Otherwise the configuration is parsed with sshd's rules (first value wins, `Include` processed in place, `Match` blocks conditional), and the scan is marked incomplete.
 
 ---
 

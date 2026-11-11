@@ -28,7 +28,9 @@ class AuditEngine:
                 findings = checker.run()
                 for finding in findings:
                     report.add_finding(finding)
+                report.incomplete.extend(getattr(checker, "incomplete", []))
             except Exception as e:
+                report.errors.append(f"{getattr(check_cls, 'check_id', check_cls.__name__)}: {e}")
                 # Catch unexpected check exceptions to ensure audit resiliency
                 report.add_finding(Finding(
                     check_id="PA-ENGINE-ERR",

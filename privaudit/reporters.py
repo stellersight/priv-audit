@@ -64,6 +64,13 @@ class ConsoleReporter:
         )
         lines.append(f"{COLOR_BOLD}--------------------------------------------------------------------{COLOR_RESET}")
 
+        if report.errors or report.incomplete:
+            lines.append(f"{COLOR_YELLOW}{COLOR_BOLD}  SCAN INCOMPLETE: the absence of a finding is not evidence of a clean host.{COLOR_RESET}")
+            for item in report.errors:
+                lines.append(f"    error: {item}")
+            for item in report.incomplete:
+                lines.append(f"    not inspected: {item}")
+
         return "\n".join(lines)
 
 
@@ -94,6 +101,15 @@ class MarkdownReporter:
         for sev in Severity:
             md.append(f"| **{sev.value}** | {summary[sev.value]} |")
         md.append("\n---\n")
+
+        if report.errors or report.incomplete:
+            md.append("## Scan Completeness\n")
+            md.append("**Incomplete.** The absence of a finding below is not evidence of a clean host.\n")
+            for item in report.errors:
+                md.append(f"- Error: {item}")
+            for item in report.incomplete:
+                md.append(f"- Not inspected: {item}")
+            md.append("\n---\n")
 
         md.append("## Detailed Findings\n")
         if not report.findings:

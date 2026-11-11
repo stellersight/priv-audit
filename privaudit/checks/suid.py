@@ -46,11 +46,33 @@ GTFOBINS_EXPLOITABLE: Dict[str, str] = {
     "cat": "Sensitive file read (e.g. /etc/shadow)",
 }
 
-# Standard common Linux system SUID binaries typically expected on distributions
+# SUID/SGID binaries that stock distributions ship with those bits set. Their
+# presence in a system directory is expected and is not a finding: a SUID
+# sudo is how sudo works, and whether it grants too much is a question for
+# the sudoers check, not for the file mode. GTFOBins describes how a binary
+# can be abused when it is given privilege it should not have; it is not a
+# vulnerability list.
 STANDARD_SUID_BINARIES: Set[str] = {
-    "passwd", "chfn", "chsh", "newgrp", "gpasswd", "mount", "umount", "su",
-    "ping", "traceroute6", "ssh-keysign", "fusermount", "fusermount3"
+    # Account and authentication tools.
+    "passwd", "chfn", "chsh", "newgrp", "gpasswd", "chage", "expiry", "su",
+    "sudo", "sudoedit", "doas", "pkexec", "unix_chkpwd", "polkit-agent-helper-1",
+    # Mounting and networking.
+    "mount", "umount", "fusermount", "fusermount3", "mount.nfs", "mount.cifs",
+    "ping", "ping6", "traceroute6", "pppd",
+    # Services and session helpers.
+    "ssh-keysign", "ssh-agent", "dbus-daemon-launch-helper", "crontab", "at",
+    "wall", "write", "bsd-write", "Xorg.wrap", "chrome-sandbox", "snap-confine",
 }
+
+# System directories where package-managed binaries live. A standard binary
+# found anywhere else is not the packaged one and is reported.
+SYSTEM_BINARY_DIRS = (
+    "/bin/", "/sbin/", "/usr/bin/", "/usr/sbin/",
+    "/usr/lib/", "/usr/lib64/", "/usr/libexec/",
+)
+
+# World-writable locations. Nothing legitimate is installed SUID here.
+TEMPORARY_DIRS = ("/tmp/", "/var/tmp/", "/dev/shm/")
 
 
 class SuidCheck(BaseCheck):
@@ -75,7 +97,11 @@ class SuidCheck(BaseCheck):
                 continue
 
             try:
-                for root, _, files in os.walk(base_path, followlinks=False):
+                for root, _, files in os.walk(
+                    base_path,
+                    followlinks=False,
+                    onerror=lambda e: self.mark_incomplete(f"could not read {e.filename}: {e.strerror}"),
+                ):
                     for file_name in files:
                         full_path = os.path.join(root, file_name)
                         try:
@@ -90,6 +116,27 @@ class SuidCheck(BaseCheck):
                                 if is_suid or is_sgid:
                                     discovered_suid.append(full_path)
                                     binary_name = os.path.basename(full_path).lower()
+                                    in_system_dir = full_path.startswith(SYSTEM_BINARY_DIRS)
+
+                                    if in_system_dir and binary_name in {b.lower() for b in STANDARD_SUID_BINARIES}:
+                                        # Expected packaged privilege; not a finding.
+                                        continue
+
+                                    if full_path.startswith(TEMPORARY_DIRS):
+                                        findings.append(Finding(
+                                            check_id="PA-SUID-TMP",
+                                            title=f"SUID/SGID Binary in World-Writable Location: {full_path}",
+                                            severity=Severity.CRITICAL if is_suid else Severity.HIGH,
+                                            description=(
+                                                f"'{full_path}' carries SUID/SGID bits in a world-writable directory. "
+                                                f"No package installs privileged binaries here; this is a common "
+                                                f"persistence and escalation artefact."
+                                            ),
+                                            evidence=f"Path: {full_path}, Octal Mode: {oct(stat.S_IMODE(mode))}, Owner UID: {file_stat.st_uid}",
+                                            remediation=f"Investigate its origin before removal; then: chmod u-s,g-s '{full_path}'",
+                                            references=["https://cwe.mitre.org/data/definitions/250.html"],
+                                        ))
+                                        continue
 
                                     # Check for high-risk GTFOBins exploitability
                                     if binary_name in GTFOBINS_EXPLOITABLE:
@@ -114,8 +161,8 @@ class SuidCheck(BaseCheck):
                                                 "CERT_In": "System Integrity and Least Privilege Configuration"
                                             }
                                         ))
-                                    elif binary_name not in STANDARD_SUID_BINARIES:
-                                        # Non-standard SUID binary found
+                                    else:
+                                        # Not a packaged binary in its packaged location.
                                         findings.append(Finding(
                                             check_id="PA-SUID-002",
                                             title=f"Non-Standard SUID/SGID Binary Discovered: {binary_name}",

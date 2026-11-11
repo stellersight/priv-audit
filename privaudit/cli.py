@@ -38,7 +38,17 @@ def main() -> int:
     parser.add_argument(
         "--exit-code",
         action="store_true",
-        help="Exit with non-zero return code (1) if CRITICAL or HIGH findings exist (ideal for CI/CD gates)."
+        help=(
+            "Return a status for CI gates: 0 no findings at or above --fail-on, "
+            "1 findings at or above --fail-on, 2 scan incomplete (for example "
+            "files unreadable without root), 3 a check failed unexpectedly."
+        ),
+    )
+    parser.add_argument(
+        "--fail-on",
+        choices=["critical", "high", "medium", "low"],
+        default="high",
+        help="Lowest severity that counts as a failure for --exit-code (default: high).",
     )
 
     args = parser.parse_args()
@@ -62,13 +72,40 @@ def main() -> int:
     else:
         print(output_text)
 
-    # Return exit code if requested
     if args.exit_code:
-        summary = report.summary
-        if summary.get(Severity.CRITICAL.value, 0) > 0 or summary.get(Severity.HIGH.value, 0) > 0:
-            return 1
+        return exit_status(report, args.fail_on)
 
     return 0
+
+
+SEVERITY_ORDER = [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW]
+
+EXIT_CLEAN = 0
+EXIT_FINDINGS = 1
+EXIT_INCOMPLETE = 2
+EXIT_ERROR = 3
+
+
+def exit_status(report, fail_on: str = "high") -> int:
+    """Map a report to a CI exit status.
+
+    An internal error outranks everything, because nothing else in the report
+    can then be trusted. Findings outrank an incomplete scan, since they are
+    real whatever else was missed. An incomplete scan is never reported as
+    clean.
+    """
+    if report.errors:
+        return EXIT_ERROR
+
+    threshold = SEVERITY_ORDER.index(Severity(fail_on.upper()))
+    failing = {sev.value for sev in SEVERITY_ORDER[: threshold + 1]}
+    if any(f.severity.value in failing for f in report.findings):
+        return EXIT_FINDINGS
+
+    if report.incomplete:
+        return EXIT_INCOMPLETE
+
+    return EXIT_CLEAN
 
 
 if __name__ == "__main__":

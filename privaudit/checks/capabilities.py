@@ -38,6 +38,7 @@ class CapabilitiesCheck(BaseCheck):
         getcap_bin = shutil.which("getcap")
 
         if not getcap_bin:
+            self.mark_incomplete("getcap is not installed, so file capabilities were not inspected")
             return findings
 
         # Run getcap recursively across candidate paths
@@ -59,11 +60,12 @@ class CapabilitiesCheck(BaseCheck):
                     if not line:
                         continue
 
-                    # Format: /usr/bin/ping cap_net_raw+ep
+                    # Current libcap prints "/usr/bin/ping cap_net_raw=ep";
+                    # releases before 2.41 print "/usr/bin/ping = cap_net_raw+ep".
                     parts = line.split()
                     if len(parts) >= 2:
                         file_path = parts[0]
-                        caps_str = parts[1].lower()
+                        caps_str = " ".join(p for p in parts[1:] if p != "=").lower()
 
                         for cap_name, (sev, danger_desc) in DANGEROUS_CAPS.items():
                             if cap_name in caps_str:
@@ -86,7 +88,8 @@ class CapabilitiesCheck(BaseCheck):
                                         "ISO_27001": "A.9.4.4 Use of Privileged Utility Programs"
                                     }
                                 ))
-            except (subprocess.TimeoutExpired, PermissionError, OSError):
+            except (subprocess.TimeoutExpired, PermissionError, OSError) as e:
+                self.mark_incomplete(f"getcap failed on {path}: {e}")
                 continue
 
         return findings

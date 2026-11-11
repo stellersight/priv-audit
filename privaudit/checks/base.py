@@ -12,6 +12,12 @@ class BaseCheck(ABC):
     name: str = "Base Check"
     description: str = "Base check interface"
 
+    def mark_incomplete(self, reason: str) -> None:
+        """Record that part of this check's scope could not be inspected."""
+        if not hasattr(self, "incomplete"):
+            self.incomplete = []
+        self.incomplete.append(f"{self.check_id}: {reason}")
+
     @abstractmethod
     def run(self) -> List[Finding]:
         """Execute the audit check and return any discovered findings."""

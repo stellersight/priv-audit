@@ -41,6 +41,11 @@ class AuditReport:
     os_info: str = ""
     findings: List[Finding] = field(default_factory=list)
     duration_seconds: float = 0.0
+    # Checks that could not inspect everything they cover, with the reason.
+    # A scan with entries here must never be read as clean.
+    incomplete: List[str] = field(default_factory=list)
+    # Checks that failed with an unexpected error.
+    errors: List[str] = field(default_factory=list)
 
     def add_finding(self, finding: Finding) -> None:
         self.findings.append(finding)
@@ -59,5 +64,8 @@ class AuditReport:
             "os_info": self.os_info,
             "duration_seconds": round(self.duration_seconds, 3),
             "summary": self.summary,
+            "complete": not self.incomplete and not self.errors,
+            "incomplete": list(self.incomplete),
+            "errors": list(self.errors),
             "findings": [f.to_dict() for f in self.findings],
         }
