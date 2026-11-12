@@ -55,20 +55,17 @@ It evaluates host configurations against real-world offensive tradecraft (GTFOBi
 
 ## Quick Start
 
-### Single-File Direct Run (No Installation Required)
+priv-audit is pre-release and not yet published to a public repository or to PyPI. Run it from a checkout:
 
 ```bash
-git clone https://github.com/stellersight/priv-audit.git
-cd priv-audit
-python3 priv-audit.py
+python3 priv-audit.py              # as root for a complete scan
 ```
 
-### Installation via Pip
+It has no dependencies beyond the Python 3.8+ standard library.
 
-```bash
-pip install stellersight-priv-audit
-priv-audit
-```
+## Accuracy evidence
+
+Accuracy is checked on clean Debian 12, Rocky Linux 9.3 and Alpine 3.20 images, and against seeded misconfigurations, with `sshd -T` as the reference for SSH settings. See [tests/fixtures/README.md](tests/fixtures/README.md) for the method, image digests and results. These results cover those images. They are not a claim of accuracy on every distribution.
 
 ---
 
