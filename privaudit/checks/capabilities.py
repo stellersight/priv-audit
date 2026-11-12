@@ -23,6 +23,35 @@ DANGEROUS_CAPS: Dict[str, Tuple[Severity, str]] = {
 }
 
 
+# File capabilities that distributions ship on purpose. newuidmap and
+# newgidmap carry cap_setuid/cap_setgid on every RHEL-family host so that
+# rootless containers can map ID ranges; ping carries cap_net_raw instead of
+# being SUID. In a system directory, with exactly these capabilities or a
+# subset, they are expected and not reported.
+EXPECTED_CAPABILITIES: Dict[str, Set[str]] = {
+    "newuidmap": {"cap_setuid"},
+    "newgidmap": {"cap_setgid"},
+    "ping": {"cap_net_raw"},
+    "ping6": {"cap_net_raw"},
+    "arping": {"cap_net_raw"},
+    "clockdiff": {"cap_net_raw"},
+    "mtr-packet": {"cap_net_raw"},
+    "dumpcap": {"cap_net_raw", "cap_net_admin"},
+    "gst-ptp-helper": {"cap_net_bind_service", "cap_net_admin"},
+}
+SYSTEM_BINARY_DIRS = ("/bin/", "/sbin/", "/usr/bin/", "/usr/sbin/", "/usr/lib/", "/usr/lib64/", "/usr/libexec/")
+
+
+def _granted_caps(caps_str: str) -> Set[str]:
+    """Extracts capability names from getcap output such as 'cap_net_raw,cap_net_admin=ep'."""
+    names: Set[str] = set()
+    for clause in caps_str.replace(" ", ",").split(","):
+        for token in clause.replace("+", "=").split("=")[:1]:
+            if token.startswith("cap_"):
+                names.add(token)
+    return names
+
+
 class CapabilitiesCheck(BaseCheck):
     """Scans Linux filesystem for binaries with dangerous Linux capabilities (cap_setuid, cap_sys_admin, etc.)."""
 
@@ -35,6 +64,7 @@ class CapabilitiesCheck(BaseCheck):
 
     def run(self) -> List[Finding]:
         findings: List[Finding] = []
+        seen_real: Set[str] = set()
         getcap_bin = shutil.which("getcap")
 
         if not getcap_bin:
@@ -65,7 +95,16 @@ class CapabilitiesCheck(BaseCheck):
                     parts = line.split()
                     if len(parts) >= 2:
                         file_path = parts[0]
+                        real = os.path.realpath(file_path)
+                        if real in seen_real:
+                            continue
+                        seen_real.add(real)
                         caps_str = " ".join(p for p in parts[1:] if p != "=").lower()
+
+                        expected = EXPECTED_CAPABILITIES.get(os.path.basename(file_path))
+                        if (expected is not None and file_path.startswith(SYSTEM_BINARY_DIRS)
+                                and _granted_caps(caps_str) <= expected):
+                            continue
 
                         for cap_name, (sev, danger_desc) in DANGEROUS_CAPS.items():
                             if cap_name in caps_str:

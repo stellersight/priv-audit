@@ -167,6 +167,17 @@ class TestCapabilitiesFormats(unittest.TestCase):
     def test_current_format(self):
         self.assertIn("PA-CAP-CAP_SETUID", [f.check_id for f in self._run("/usr/bin/python3 cap_setuid=ep\n")])
 
+    def test_packaged_newuidmap_is_expected(self):
+        # Stock on every RHEL-family host, for rootless containers.
+        self.assertEqual([], self._run("/usr/bin/newuidmap cap_setuid=ep\n/usr/bin/ping cap_net_raw=ep\n"))
+
+    def test_expected_name_with_extra_capability_is_reported(self):
+        ids = [f.check_id for f in self._run("/usr/bin/newuidmap cap_setuid,cap_sys_admin=ep\n")]
+        self.assertIn("PA-CAP-CAP_SYS_ADMIN", ids)
+
+    def test_expected_name_outside_system_dirs_is_reported(self):
+        self.assertTrue(self._run("/opt/tools/newuidmap cap_setuid=ep\n"))
+
     def test_pre_2_41_format(self):
         self.assertIn("PA-CAP-CAP_SETUID", [f.check_id for f in self._run("/usr/bin/python3 = cap_setuid+ep\n")])
 

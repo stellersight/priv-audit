@@ -62,6 +62,8 @@ STANDARD_SUID_BINARIES: Set[str] = {
     # Services and session helpers.
     "ssh-keysign", "ssh-agent", "dbus-daemon-launch-helper", "crontab", "at",
     "wall", "write", "bsd-write", "Xorg.wrap", "chrome-sandbox", "snap-confine",
+    # RHEL family.
+    "pam_timestamp_check", "userhelper", "staprun", "sg", "grub2-set-bootflag",
 }
 
 # System directories where package-managed binaries live. A standard binary
@@ -91,6 +93,7 @@ class SuidCheck(BaseCheck):
     def run(self) -> List[Finding]:
         findings: List[Finding] = []
         discovered_suid: List[str] = []
+        seen_real = set()
 
         for base_path in self.search_paths:
             if not os.path.isdir(base_path):
@@ -114,6 +117,12 @@ class SuidCheck(BaseCheck):
                                 is_sgid = bool(mode & stat.S_ISGID)
 
                                 if is_suid or is_sgid:
+                                    # Merged-/usr systems reach one file through
+                                    # /sbin and /usr/sbin; report it once.
+                                    real = os.path.realpath(full_path)
+                                    if real in seen_real:
+                                        continue
+                                    seen_real.add(real)
                                     discovered_suid.append(full_path)
                                     binary_name = os.path.basename(full_path).lower()
                                     in_system_dir = full_path.startswith(SYSTEM_BINARY_DIRS)
