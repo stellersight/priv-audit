@@ -10,8 +10,8 @@ from privaudit.models import Finding, Severity
 # SUIT for Linux grants NOPASSWD only to its broker, which refuses to run
 # anything without an approved, unexpired grant. Such a rule is expected, as
 # long as the broker files themselves are root-controlled.
-SUIT_BROKER = "/usr/sbin/suit-exec"
-SUIT_CLI = "/usr/sbin/suit"
+SUIT_BROKER = "/usr/bin/suit-exec"
+SUIT_CLI = "/usr/bin/suit"
 
 
 def _root_controlled(path: str, stat_fn=os.stat) -> bool:

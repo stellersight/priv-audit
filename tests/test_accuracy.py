@@ -229,7 +229,7 @@ class TestExitStatus(unittest.TestCase):
 class TestSuitBrokerRule(unittest.TestCase):
     """SUIT for Linux's own sudoers rule is expected, but only while its files are root's."""
 
-    RULE = "/usr/sbin/suit-exec, /usr/sbin/suit request *, /usr/sbin/suit revoke *, /usr/sbin/suit status"
+    RULE = "/usr/bin/suit-exec, /usr/bin/suit request *, /usr/bin/suit revoke *, /usr/bin/suit status"
 
     @staticmethod
     def stat_of(uid, mode):
