@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: Unit tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ['3.9', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m unittest discover -s tests -v
+
+  coverage:
+    name: Coverage (statement and branch)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install coverage==7.6.1
+      - run: coverage run --branch --source=privaudit -m unittest discover -s tests
+      - run: coverage report | tee coverage.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.txt
+
+  package:
+    name: Package and install (${{ matrix.base }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        base: ['debian:12-slim', 'ubuntu:24.04', 'rockylinux:9', 'fedora:41']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build .deb and .rpm with nfpm
+        run: |
+          mkdir -p dist
+          for p in deb rpm; do
+            docker run --rm -v "$PWD:/w" -w /w -e VERSION=0.1.0 -e APK_KEY_FILE= \
+              goreleaser/nfpm:v2.41.1 package -f packaging/nfpm.yaml -p $p -t dist/
+          done
+      - name: Install and run the packaged auditor
+        run: |
+          docker run --rm -v "$PWD/dist:/dist:ro" ${{ matrix.base }} sh -c '
+            if command -v apt-get >/dev/null; then apt-get update -qq && apt-get install -y -qq /dist/*.deb;
+            else dnf install -y -q /dist/*.rpm; fi
+            priv-audit --version
+            priv-audit --json -o /tmp/report.json --exit-code; rc=$?
+            # 0 clean, 1 findings, 2 incomplete: all mean the scan ran; 3 is an error.
+            [ $rc -le 2 ] && python3 -c "import json; json.load(open(\"/tmp/report.json\"))"'

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 """
 RFC 6962 Domain-Separated Merkle Tree & Cryptographic Audit Checkpoint Engine.
 StellerSight Private Limited - Continuous Access Governance & SUIT Core Architecture.

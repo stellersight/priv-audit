@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 """Persistence mechanism and scheduled task auditor."""
 
 import os

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 """Priv-Audit check registry."""
 
 from privaudit.checks.suid import SuidCheck

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 """Standalone executable launcher for StellerSight Priv-Audit."""
 
 import os

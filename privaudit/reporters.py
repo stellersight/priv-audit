@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 """Report renderers for Priv-Audit results (Console ANSI, JSON, and Markdown)."""
 
 import json

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 """Data models for Priv-Audit findings and audit results."""
 
 from dataclasses import dataclass, field, asdict

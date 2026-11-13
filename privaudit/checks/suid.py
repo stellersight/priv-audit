@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 """SUID and SGID binary auditing module with GTFOBins exploit detection."""
 
 import os

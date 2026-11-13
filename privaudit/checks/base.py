@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 """Base check interface for Priv-Audit analyzers."""
 
 from abc import ABC, abstractmethod

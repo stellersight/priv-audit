@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 import unittest
 import hashlib
 from privaudit.crypto import RFC6962Hasher, RFC6962MerkleTree

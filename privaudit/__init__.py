@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 """StellerSight Priv-Audit: Open-source Linux privilege boundary and host hardening auditor.
 
 Copyright (c) 2026 StellerSight Private Limited.

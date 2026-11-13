@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 """priv-audit fixture corpus, run as root inside a disposable container.
 
 A  clean image: no HIGH or CRITICAL finding (false-positive check)

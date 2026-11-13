@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 StellerSight Private Limited
 """Regression tests for detection accuracy.
 
 Each test reproduces a defect found in the 12 November 2026 audit, so that
