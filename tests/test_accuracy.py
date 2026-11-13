@@ -225,5 +225,31 @@ class TestExitStatus(unittest.TestCase):
         self.assertEqual(EXIT_ERROR, exit_status(self._report([Severity.CRITICAL], errors=["boom"])))
 
 
+
+class TestSuitBrokerRule(unittest.TestCase):
+    """SUIT for Linux's own sudoers rule is expected, but only while its files are root's."""
+
+    RULE = "/usr/sbin/suit-exec, /usr/sbin/suit request *, /usr/sbin/suit revoke *, /usr/sbin/suit status"
+
+    @staticmethod
+    def stat_of(uid, mode):
+        from types import SimpleNamespace
+        return lambda path: SimpleNamespace(st_uid=uid, st_mode=0o100000 | mode)
+
+    def test_root_owned_broker_rule_is_expected(self):
+        from privaudit.checks.sudo import is_suit_broker_rule
+        self.assertTrue(is_suit_broker_rule(self.RULE, self.stat_of(0, 0o755)))
+
+    def test_writable_broker_is_not_trusted(self):
+        from privaudit.checks.sudo import is_suit_broker_rule
+        self.assertFalse(is_suit_broker_rule(self.RULE, self.stat_of(0, 0o757)))
+        self.assertFalse(is_suit_broker_rule(self.RULE, self.stat_of(1000, 0o755)))
+
+    def test_other_command_in_the_rule_is_still_reported(self):
+        from privaudit.checks.sudo import is_suit_broker_rule
+        self.assertFalse(is_suit_broker_rule(self.RULE + ", /usr/bin/vim", self.stat_of(0, 0o755)))
+        self.assertFalse(is_suit_broker_rule("/usr/local/bin/suit-exec", self.stat_of(0, 0o755)))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -7,6 +7,35 @@ from privaudit.checks.base import BaseCheck
 from privaudit.models import Finding, Severity
 
 # Regular expressions detecting dangerous sudo patterns
+# SUIT for Linux grants NOPASSWD only to its broker, which refuses to run
+# anything without an approved, unexpired grant. Such a rule is expected, as
+# long as the broker files themselves are root-controlled.
+SUIT_BROKER = "/usr/sbin/suit-exec"
+SUIT_CLI = "/usr/sbin/suit"
+
+
+def _root_controlled(path: str, stat_fn=os.stat) -> bool:
+    try:
+        st = stat_fn(path)
+    except OSError:
+        return False
+    return st.st_uid == 0 and not st.st_mode & 0o022
+
+
+def is_suit_broker_rule(target_cmds: str, stat_fn=os.stat) -> bool:
+    """True when every command in a NOPASSWD list is a root-controlled SUIT entry point."""
+    commands = [c.strip() for c in target_cmds.split(",") if c.strip()]
+    if not commands:
+        return False
+    for command in commands:
+        program = command.split()[0]
+        if program not in (SUIT_BROKER, SUIT_CLI):
+            return False
+        if not _root_controlled(program, stat_fn):
+            return False
+    return True
+
+
 RE_NOPASSWD = re.compile(r'\bNOPASSWD\s*:\s*([^#\n]+)', re.IGNORECASE)
 RE_ALL_COMMANDS = re.compile(r'\bALL\s*=\s*\([^)]*\)\s*(NOPASSWD\s*:\s*)?ALL\b', re.IGNORECASE)
 RE_WILDCARD_EXEC = re.compile(r'/\S*\*\S*', re.IGNORECASE)
@@ -118,6 +147,20 @@ class SudoCheck(BaseCheck):
                             "CIS_Linux": "5.3.7 Ensure sudo requires authentication",
                             "CERT_In": "Requirement for Multi-Factor and Authenticated Root Access"
                         }
+                    ))
+                elif is_suit_broker_rule(target_cmds):
+                    findings.append(Finding(
+                        check_id="PA-SUDO-SUIT-BROKER",
+                        title="Passwordless Sudo Rule Limited to the SUIT Broker",
+                        severity=Severity.INFO,
+                        description=(
+                            f"Line {lineno} in '{file_path}' allows only SUIT for Linux entry points without a "
+                            f"password. The broker runs nothing without an approved, unexpired grant, and its files "
+                            f"are root-controlled. Check that these users hold no other sudo rights (suit doctor)."
+                        ),
+                        evidence=f"{file_path}:{lineno} -> {line}",
+                        remediation="None required. Run 'suit doctor' as root to find other sudo rights that bypass SUIT.",
+                        references=["https://github.com/stellersight/suit-linux"]
                     ))
                 else:
                     findings.append(Finding(
