@@ -55,11 +55,11 @@ It evaluates host configurations against real-world offensive tradecraft (GTFOBi
 
 ## Quick Start
 
-priv-audit is pre-release (0.1.0). Install it from StellerSight's signed package repository, which serves apt (Debian, Ubuntu), dnf/yum (RHEL, Rocky, AlmaLinux, Oracle Linux, Fedora, Amazon Linux 2023), zypper (openSUSE Tumbleweed), apk (Alpine) and pacman (Arch). Instructions and the signing-key fingerprint are at <https://stellersight.github.io/packages/>. For example, on Debian or Ubuntu:
+priv-audit is pre-release (0.1.0). Install it from StellerSight's signed package repository, which serves apt (Debian, Ubuntu), dnf/yum (RHEL, Rocky, AlmaLinux, Oracle Linux, Fedora, Amazon Linux 2023), zypper (openSUSE Tumbleweed), apk (Alpine) and pacman (Arch). Instructions and the signing-key fingerprint are at <https://packages.stellersight.com/>. For example, on Debian or Ubuntu:
 
 ```bash
-curl -fsSL https://stellersight.github.io/packages/stellersight.gpg | sudo tee /usr/share/keyrings/stellersight.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/stellersight.gpg] https://stellersight.github.io/packages/deb stable main" | sudo tee /etc/apt/sources.list.d/stellersight.list
+curl -fsSL https://packages.stellersight.com/stellersight.gpg | sudo tee /usr/share/keyrings/stellersight.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/stellersight.gpg] https://packages.stellersight.com/deb stable main" | sudo tee /etc/apt/sources.list.d/stellersight.list
 sudo apt update && sudo apt install priv-audit
 sudo priv-audit                    # as root for a complete scan
 ```
