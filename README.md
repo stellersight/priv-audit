@@ -14,7 +14,7 @@ Developed by **StellerSight Private Limited**, *Open-Source Security Engineering
 
 **Priv-Audit** is a lightweight, zero-dependency security utility designed to rapidly audit Linux host privilege escalation vectors, sensitive file permissions, dangerous binaries, and identity boundary misconfigurations.
 
-It evaluates host configurations against real-world offensive tradecraft (GTFOBins, PwnKit, sudoer bypasses) and institutional security standards (CIS Linux Benchmarks, ISO 27001 A.9, and CERT-In Directions).
+It evaluates host configurations against real-world offensive tradecraft (GTFOBins-listed SUID binaries, risky sudoers rules) and institutional security standards (CIS Linux Benchmarks, ISO 27001 A.9, and CERT-In Directions).
 
 ```
    +-------------------------------------------------------------+
@@ -102,8 +102,8 @@ priv-audit --exit-code --fail-on medium
 An incomplete scan is never reported as clean. Run as root for a complete result.
 
 ### What is and is not a finding
-* Package-managed SUID binaries in system directories (`sudo`, `passwd`, `pkexec`, `unix_chkpwd` and similar) are expected and are not reported. Whether `sudo` grants too much is decided by the sudoers check, not by its file mode.
-* The same binaries outside system directories are reported. Anything SUID or SGID in `/tmp`, `/var/tmp` or `/dev/shm` is CRITICAL.
+* Standard SUID binaries in system directories (`sudo`, `passwd`, `pkexec`, `unix_chkpwd` and similar) are expected and are not reported. This is a list of names and directories, not a query of the package manager, and it does not check for vulnerable versions (for example PwnKit in `pkexec`); use your distribution's security updates for that. Whether `sudo` grants too much is decided by the sudoers check, not by its file mode.
+* The same binaries outside system directories are reported. Anything SUID in `/tmp`, `/var/tmp` or `/dev/shm` is CRITICAL; SGID-only files there are HIGH.
 * File permissions are checked bit by bit against a per-file policy, so `/etc/shadow` at `0604` is reported even though `0604` is numerically below `0640`.
 * SSH settings are read from `sshd -T`, the daemon's own effective configuration, when it is available. Otherwise the configuration is parsed with sshd's rules (first value wins, `Include` processed in place, `Match` blocks conditional), and the scan is marked incomplete.
 

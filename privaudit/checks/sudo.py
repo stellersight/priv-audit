@@ -58,8 +58,8 @@ class SudoCheck(BaseCheck):
                     remediation="Execute priv-audit as root or via authorized sudo.",
                 ))
                 self.mark_incomplete(f"could not read {file_path}")
-            except Exception as e:
-                continue
+            except OSError as e:
+                self.mark_incomplete(f"could not read {file_path}: {e}")
 
         return findings
 

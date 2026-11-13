@@ -85,6 +85,10 @@ class CapabilitiesCheck(BaseCheck):
                     timeout=15
                 )
 
+                if proc.returncode != 0 or proc.stderr.strip():
+                    detail = proc.stderr.strip().splitlines()[0] if proc.stderr.strip() else f"exit status {proc.returncode}"
+                    self.mark_incomplete(f"getcap reported an error under {path}: {detail}")
+
                 for line in proc.stdout.splitlines():
                     line = line.strip()
                     if not line:
