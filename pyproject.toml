@@ -38,3 +38,7 @@ stellersight-priv-audit = "privaudit.cli:main"
 "Homepage" = "https://github.com/stellersight/priv-audit"
 "Bug Tracker" = "https://github.com/stellersight/priv-audit/issues"
 "Documentation" = "https://github.com/stellersight/priv-audit#readme"
+
+[tool.setuptools.packages.find]
+# Flat layout: only the privaudit package ships; tests and the launcher stay out.
+include = ["privaudit*"]
