@@ -55,11 +55,16 @@ It evaluates host configurations against real-world offensive tradecraft (GTFOBi
 
 ## Quick Start
 
-priv-audit is pre-release and not yet published to a public repository or to PyPI. Run it from a checkout:
+priv-audit is pre-release (0.1.0). Install it from StellerSight's signed package repository, which serves apt (Debian, Ubuntu), dnf/yum (RHEL, Rocky, AlmaLinux, Oracle Linux, Fedora, Amazon Linux 2023), zypper (openSUSE Tumbleweed), apk (Alpine) and pacman (Arch). Instructions and the signing-key fingerprint are at <https://stellersight.github.io/packages/>. For example, on Debian or Ubuntu:
 
 ```bash
-python3 priv-audit.py              # as root for a complete scan
+curl -fsSL https://stellersight.github.io/packages/stellersight.gpg | sudo tee /usr/share/keyrings/stellersight.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/stellersight.gpg] https://stellersight.github.io/packages/deb stable main" | sudo tee /etc/apt/sources.list.d/stellersight.list
+sudo apt update && sudo apt install priv-audit
+sudo priv-audit                    # as root for a complete scan
 ```
+
+Or run it from a checkout: `python3 priv-audit.py`. It is not on PyPI. It needs Python 3.8+ as `python3`, so RHEL 8 and openSUSE Leap 15 (Python 3.6) are not supported.
 
 It has no dependencies beyond the Python 3.8+ standard library.
 
