@@ -25,6 +25,20 @@ overrides:
       - python3 >= 3.8
     recommends:
       - libcap
+  apk:
+    depends:
+      - python3>=3.8
+      - libcap-utils
+  archlinux:
+    depends:
+      - python>=3.8
+      - libcap
+apk:
+  signature:
+    key_file: ${APK_KEY_FILE}
+    key_name: stellersight.rsa.pub
+archlinux:
+  packager: StellerSight Private Limited <security@stellersight.com>
 contents:
   - src: privaudit/
     dst: /usr/lib/priv-audit/privaudit/
